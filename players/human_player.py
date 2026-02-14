@@ -1,0 +1,2 @@
+# Bridges WebSocket ↔ game engine
+
