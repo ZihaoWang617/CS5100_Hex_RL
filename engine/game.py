@@ -172,9 +172,6 @@ class GameController:
             'timestamp': time.time()
         })
 
-        # Notify players if they support it
-        self._notify_players_of_move(row, col, player.color)
-
         # Check for win
         if self.board.check_win(player.color):
             self._handle_win(player)
@@ -240,11 +237,6 @@ class GameController:
                            reason=validation_result.value,
                            attempt=attempt)
 
-            # Notify player if they support it
-            if hasattr(player, 'notify_result'):
-                player.notify_result(False,
-                                     f"{validation_result.value} (attempt {attempt}/{self.MAX_INVALID_MOVES})")
-
             # Check if player exceeded total error limit
             if self.player_errors[player.color] >= self.MAX_TOTAL_ERRORS:
                 self.log_event(LogLevel.CRITICAL,
@@ -293,12 +285,6 @@ class GameController:
                        winner=player.name,
                        turns=self.current_turn)
 
-        # Notify players if they support it
-        if hasattr(self.red_player, 'notify_game_end'):
-            self.red_player.notify_game_end(self.status, self.winner)
-        if hasattr(self.blue_player, 'notify_game_end'):
-            self.blue_player.notify_game_end(self.status, self.winner)
-
     def _handle_draw(self):
         """Handle draw (shouldn't happen in Hex)."""
         self.status = GameStatus.DRAW
@@ -314,13 +300,6 @@ class GameController:
     def _get_opponent(self, player):
         """Get the opponent of a player."""
         return self.blue_player if player == self.red_player else self.red_player
-
-    def _notify_players_of_move(self, row: int, col: int, color: Color):
-        """Notify both players of a move if they support it."""
-        if hasattr(self.red_player, 'notify_move'):
-            self.red_player.notify_move(row, col, color)
-        if hasattr(self.blue_player, 'notify_move'):
-            self.blue_player.notify_move(row, col, color)
 
     def run_game(self) -> GameStatus:
         """

@@ -17,6 +17,7 @@ That's it! No need to track state, handle errors, or manage game flow.
 
 import sys
 import random
+import time
 
 
 def parse_board(line):
@@ -78,19 +79,25 @@ def choose_move(size, my_color, board):
 
 
 def main():
-    """Main function - this is all you need!"""
-    # Read the board state (one line)
-    line = input()
+    """Loop version - handles multiple moves."""
+    while True:
+        try:
+            # Read the board state (one line per turn)
+            line = input()
 
-    # Parse it
-    size, my_color, board = parse_board(line)
+            # Parse it
+            size, my_color, board = parse_board(line)
 
-    # Choose your move
-    row, col = choose_move(size, my_color, board)
+            # Choose your move
+            row, col = choose_move(size, my_color, board)
 
-    # Output your move (don't forget to flush!)
-    print(f"{row} {col}")
-    sys.stdout.flush()
+            # Output your move
+            print(f"{row} {col}")
+            sys.stdout.flush()
+
+        except EOFError:
+            # Game ended - controller closed our stdin
+            break
 
 
 if __name__ == "__main__":

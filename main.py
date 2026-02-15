@@ -10,9 +10,11 @@ Usage:
 
 import sys
 import argparse
+from typing import Optional
 from engine.game import GameController
 from engine.constants import Color, DEFAULT_BOARD_SIZE
 from players.terminal_player import TerminalPlayer
+from players.subprocess_player import SubprocessPlayer
 from view.terminal_view import TerminalView
 
 
@@ -23,10 +25,13 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py                        # Two human players
-  python main.py --board-size 7         # Smaller board
-  python main.py --no-stats             # Hide player stats
-  python main.py --show-full-log        # Show complete log at end
+  python main.py                                          # Two human players
+  python main.py --board-size 7                           # Smaller board
+  python main.py --red-subprocess "python3 agent.py"      # Human vs AI
+  python main.py --blue-subprocess "java Agent"           # Human vs Java AI
+  python main.py --red-subprocess "python3 agent1.py" --blue-subprocess "python3 agent2.py"  # AI vs AI
+  python main.py --no-stats                               # Hide player stats
+  python main.py --show-full-log                          # Show complete log at end
         """
     )
 
@@ -55,6 +60,28 @@ Examples:
     )
 
     parser.add_argument(
+        '--red-subprocess',
+        type=str,
+        metavar='COMMAND',
+        help='Make RED player a subprocess (e.g., "python3 agent.py" or "java Agent")'
+    )
+
+    parser.add_argument(
+        '--blue-subprocess',
+        type=str,
+        metavar='COMMAND',
+        help='Make BLUE player a subprocess (e.g., "python3 agent.py" or "java Agent")'
+    )
+
+    parser.add_argument(
+        '--timeout',
+        type=float,
+        default=5.0,
+        metavar='SECONDS',
+        help='Timeout for subprocess players in seconds (default: 5.0)'
+    )
+
+    parser.add_argument(
         '--no-stats',
         action='store_true',
         help='Hide player statistics during game'
@@ -75,6 +102,39 @@ Examples:
     return parser.parse_args()
 
 
+def create_player(color: Color, name: str, subprocess_cmd: Optional[str], timeout: float):
+    """
+    Create a player (either Terminal or Subprocess).
+
+    Args:
+        color: Player color
+        name: Player name
+        subprocess_cmd: Command to run subprocess (None for terminal player)
+        timeout: Timeout for subprocess players
+
+    Returns:
+        Player instance
+    """
+    if subprocess_cmd:
+        # Parse command
+        parts = subprocess_cmd.split()
+        program = parts[0]
+        args = parts[1:] if len(parts) > 1 else []
+
+        # Create subprocess player
+        player = SubprocessPlayer(
+            color=color,
+            program_path=program,
+            args=args,
+            timeout=timeout,
+            name=name
+        )
+        return player
+    else:
+        # Create terminal player
+        return TerminalPlayer(color, name)
+
+
 def main():
     """Main entry point."""
     args = parse_arguments()
@@ -92,9 +152,26 @@ def main():
     # Create game controller
     game = GameController(board_size=args.board_size)
 
-    # Create players (both terminal players for now)
-    red_player = TerminalPlayer(Color.RED, args.red_name)
-    blue_player = TerminalPlayer(Color.BLUE, args.blue_name)
+    # Create players (terminal or subprocess based on arguments)
+    red_player = create_player(
+        Color.RED,
+        args.red_name,
+        args.red_subprocess,
+        args.timeout
+    )
+    blue_player = create_player(
+        Color.BLUE,
+        args.blue_name,
+        args.blue_subprocess,
+        args.timeout
+    )
+
+    # Track if we have subprocess players for cleanup
+    subprocess_players = []
+    if isinstance(red_player, SubprocessPlayer):
+        subprocess_players.append(red_player)
+    if isinstance(blue_player, SubprocessPlayer):
+        subprocess_players.append(blue_player)
 
     # Create view
     view = TerminalView(game)
@@ -103,48 +180,74 @@ def main():
     # Start game
     view.display_game_start()
 
+    # Initialize subprocess players if any
+    if subprocess_players:
+        print("Initializing subprocess players...")
+        for player in subprocess_players:
+            if not player.initialize(args.board_size):
+                print(f"\nError: Failed to initialize {player.name}")
+                print("Make sure the command is correct and the program exists.")
+                # Cleanup already initialized players
+                for p in subprocess_players:
+                    p.cleanup()
+                sys.exit(1)
+        print("✓ All subprocess players initialized successfully")
+        print()
+
     if not game.start_game(red_player, blue_player):
         print("\nError: Failed to start game")
+        # Cleanup subprocess players
+        for player in subprocess_players:
+            player.cleanup()
         sys.exit(1)
 
     print("\nGame initialized successfully!")
     print()
 
-    # Game loop with view updates
-    while True:
-        # Display current state
-        view.display_board()
+    # Game loop with view updates - wrap in try-finally for cleanup
+    try:
+        while True:
+            # Display current state
+            view.display_board()
 
-        if view.show_stats:
-            view.display_stats()
+            if view.show_stats:
+                view.display_stats()
 
-        view.display_log(recent_count=5)
+            view.display_log(recent_count=5)
 
-        # Play one turn
-        view.display_turn_start()
+            # Play one turn
+            view.display_turn_start()
 
-        continue_game = game.play_turn()
+            continue_game = game.play_turn()
 
-        if not continue_game:
-            # Game ended
-            break
+            if not continue_game:
+                # Game ended
+                break
 
-        # Small pause to make it readable
-        print()
+            # Small pause to make it readable
+            print()
 
-    # Game ended - show final state
-    view.display_game_end()
+        # Game ended - show final state
+        view.display_game_end()
 
-    # Optional: show detailed logs
-    if args.show_full_log:
-        print()
-        input("Press Enter to view full event log...")
-        view.display_full_log()
+        # Optional: show detailed logs
+        if args.show_full_log:
+            print()
+            input("Press Enter to view full event log...")
+            view.display_full_log()
 
-    if args.show_move_history:
-        print()
-        input("Press Enter to view move history...")
-        view.display_move_history()
+        if args.show_move_history:
+            print()
+            input("Press Enter to view move history...")
+            view.display_move_history()
+
+    finally:
+        # Cleanup subprocess players
+        if subprocess_players:
+            print("\nCleaning up subprocess players...")
+            for player in subprocess_players:
+                player.cleanup()
+            print("✓ Cleanup complete")
 
     print("\nThank you for playing!")
     print()
