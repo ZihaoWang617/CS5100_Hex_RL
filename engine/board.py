@@ -38,6 +38,8 @@ class HexBoard:
                 self.board[(row, col)] = Color.EMPTY
 
         self.move_history = []  # List of (row, col, color) tuples
+        # Track if swap has been used (can only swap once)
+        self.swap_used = False
 
     def is_valid_position(self, row: int, col: int) -> bool:
         """Check if a position is within board bounds."""
@@ -84,7 +86,8 @@ class HexBoard:
         """
         Execute a swap move (pie rule).
 
-        A swap move can only be performed when there is exactly one move on the board.
+        A swap move can only be performed when there is exactly one move on the board
+        and swap has not been used yet.
         The move's position is swapped (row <-> col) and the color is changed to the opponent's color.
 
         For example:
@@ -93,8 +96,12 @@ class HexBoard:
 
         Returns:
             MoveResult.SUCCESS if swap was successful
-            MoveResult.SWAP_NOT_ALLOWED if there isn't exactly one move on the board
+            MoveResult.SWAP_NOT_ALLOWED if swap has already been used or there isn't exactly one move
         """
+        # Check if swap has already been used
+        if self.swap_used:
+            return MoveResult.SWAP_NOT_ALLOWED
+
         # Check if there's exactly one move on the board
         if len(self.move_history) != 1:
             return MoveResult.SWAP_NOT_ALLOWED
@@ -115,6 +122,9 @@ class HexBoard:
 
         # Update move history
         self.move_history[0] = (swapped_row, swapped_col, swapped_color)
+
+        # Mark swap as used
+        self.swap_used = True
 
         return MoveResult.SUCCESS
 
@@ -259,6 +269,7 @@ class HexBoard:
         new_board = HexBoard(self.size)
         new_board.board = self.board.copy()
         new_board.move_history = self.move_history.copy()
+        new_board.swap_used = self.swap_used
         return new_board
 
     def to_string(self) -> str:
@@ -301,7 +312,8 @@ class HexBoard:
         return {
             'size': self.size,
             'board': {f"{r},{c}": cell.value for (r, c), cell in self.board.items()},
-            'move_history': [(r, c, color.value) for r, c, color in self.move_history]
+            'move_history': [(r, c, color.value) for r, c, color in self.move_history],
+            'swap_used': self.swap_used
         }
 
     @classmethod
@@ -325,5 +337,8 @@ class HexBoard:
         # Restore move history
         board.move_history = [(r, c, Color(color_value))
                               for r, c, color_value in data['move_history']]
+
+        # Restore swap_used flag (default to False for backward compatibility)
+        board.swap_used = data.get('swap_used', False)
 
         return board

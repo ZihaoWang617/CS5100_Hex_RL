@@ -68,7 +68,7 @@ class TerminalPlayer(Player):
 
         # Check if swap is available
         move_count = board.get_move_count()
-        if move_count == 1:
+        if move_count == 1 and not board.swap_used:
             print("\n*** SWAP AVAILABLE: You can type 'swap' to use the pie rule ***")
 
         # Prompt for input
@@ -83,9 +83,12 @@ class TerminalPlayer(Player):
 
                 # Check for swap move
                 if user_input.lower() == 'swap':
-                    if move_count == 1:
+                    if move_count == 1 and not board.swap_used:
                         print("Executing swap move...")
                         return "swap"
+                    elif board.swap_used:
+                        print("Swap has already been used!")
+                        continue
                     else:
                         print("Swap is only allowed after exactly one move!")
                         continue

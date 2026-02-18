@@ -246,8 +246,8 @@ class GameController:
 
             # Check if it's a swap move
             if move == "swap":
-                # Validate swap is allowed (exactly one move on board)
-                if len(self.board.move_history) == 1:
+                # Validate swap is allowed (exactly one move on board and swap not used)
+                if len(self.board.move_history) == 1 and not self.board.swap_used:
                     return "swap"
                 else:
                     validation_result = MoveResult.SWAP_NOT_ALLOWED
