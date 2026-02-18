@@ -80,6 +80,44 @@ class HexBoard:
 
         return MoveResult.SUCCESS
 
+    def swap_move(self) -> MoveResult:
+        """
+        Execute a swap move (pie rule).
+
+        A swap move can only be performed when there is exactly one move on the board.
+        The move's position is swapped (row <-> col) and the color is changed to the opponent's color.
+
+        For example:
+        - If RED placed at (4, 8), after swap there will be BLUE at (8, 4)
+        - If BLUE placed at (1, 7), after swap there will be RED at (7, 1)
+
+        Returns:
+            MoveResult.SUCCESS if swap was successful
+            MoveResult.SWAP_NOT_ALLOWED if there isn't exactly one move on the board
+        """
+        # Check if there's exactly one move on the board
+        if len(self.move_history) != 1:
+            return MoveResult.SWAP_NOT_ALLOWED
+
+        # Get the first (and only) move
+        row, col, color = self.move_history[0]
+
+        # Calculate the swapped position and color
+        swapped_row = col
+        swapped_col = row
+        swapped_color = color.opponent()
+
+        # Clear the original position
+        self.board[(row, col)] = Color.EMPTY
+
+        # Place the swapped move
+        self.board[(swapped_row, swapped_col)] = swapped_color
+
+        # Update move history
+        self.move_history[0] = (swapped_row, swapped_col, swapped_color)
+
+        return MoveResult.SUCCESS
+
     def undo_move(self) -> bool:
         """
         Undo the last move.

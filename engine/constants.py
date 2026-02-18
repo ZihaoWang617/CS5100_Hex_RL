@@ -46,6 +46,7 @@ class MoveResult(Enum):
     CELL_OCCUPIED = "cell_occupied"
     WRONG_TURN = "wrong_turn"
     GAME_OVER = "game_over"
+    SWAP_NOT_ALLOWED = "swap_not_allowed"
 
     def __str__(self):
         return self.value

@@ -10,7 +10,7 @@ Response: 8 8
 Students parse the input and output their move.
 """
 
-from typing import Tuple
+from typing import Tuple, Union
 from .board import HexBoard
 from .constants import Color
 
@@ -50,18 +50,19 @@ class Protocol:
         return f"{board.size} {player_color.name} {moves_str}\n"
 
     @staticmethod
-    def decode_move(line: str) -> Tuple[int, int]:
+    def decode_move(line: str) -> Union[Tuple[int, int], str]:
         """
         Parse move response from agent.
 
-        Expected format: <ROW> <COL>
+        Expected format: <ROW> <COL> or 'swap'
         Example: 5 5
+        Example: swap
 
         Args:
             line: Input line from agent
 
         Returns:
-            Tuple of (row, col)
+            Tuple of (row, col) for normal move, or "swap" string for swap move
 
         Raises:
             ProtocolError: If format is invalid
@@ -71,11 +72,15 @@ class Protocol:
         if not line:
             raise ProtocolError("Empty move string")
 
+        # Check if it's a swap move
+        if line.lower() == "swap":
+            return "swap"
+
         parts = line.split()
 
         if len(parts) != 2:
             raise ProtocolError(
-                f"Invalid move format: '{line}'. Expected: <row> <col>")
+                f"Invalid move format: '{line}'. Expected: <row> <col> or 'swap'")
 
         try:
             row = int(parts[0])

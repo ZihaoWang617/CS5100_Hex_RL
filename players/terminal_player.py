@@ -4,7 +4,7 @@ Simple terminal-based player for testing and debugging.
 Allows a human to play through terminal input/output.
 """
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from engine.board import HexBoard
 from engine.constants import Color
 from .base import Player
@@ -48,7 +48,7 @@ class TerminalPlayer(Player):
         print(f"{'='*60}\n")
         return True
 
-    def get_move(self, board: HexBoard) -> Optional[Tuple[int, int]]:
+    def get_move(self, board: HexBoard) -> Union[Tuple[int, int], str, None]:
         """
         Prompt user for a move via terminal.
 
@@ -56,7 +56,7 @@ class TerminalPlayer(Player):
             board: Current board state
 
         Returns:
-            Tuple of (row, col) or None if input fails
+            Tuple of (row, col) for normal move, "swap" for swap move, or None if input fails
         """
         # Display current board
         print(f"\n{board.to_string()}")
@@ -66,22 +66,36 @@ class TerminalPlayer(Player):
         empty_cells = board.get_empty_cells()
         print(f"Available moves: {len(empty_cells)} cells")
 
+        # Check if swap is available
+        move_count = board.get_move_count()
+        if move_count == 1:
+            print("\n*** SWAP AVAILABLE: You can type 'swap' to use the pie rule ***")
+
         # Prompt for input
         while True:
             try:
                 user_input = input(
-                    "Enter move (row col) or 'q' to quit: ").strip()
+                    "Enter move (row col), 'swap', or 'q' to quit: ").strip()
 
                 if user_input.lower() in ['q', 'quit', 'exit']:
                     print("Player quit.")
                     return None
+
+                # Check for swap move
+                if user_input.lower() == 'swap':
+                    if move_count == 1:
+                        print("Executing swap move...")
+                        return "swap"
+                    else:
+                        print("Swap is only allowed after exactly one move!")
+                        continue
 
                 # Parse input - support multiple formats
                 parts = user_input.replace(',', ' ').replace(
                     '(', '').replace(')', '').split()
 
                 if len(parts) != 2:
-                    print("Invalid format. Please enter: row col (e.g., 5 7)")
+                    print("Invalid format. Please enter: row col (e.g., 5 7) or 'swap'")
                     continue
 
                 row = int(parts[0])

@@ -5,7 +5,7 @@ Defines the minimal interface that all player implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from engine.board import HexBoard
 from engine.constants import Color
 
@@ -48,7 +48,7 @@ class Player(ABC):
         pass
 
     @abstractmethod
-    def get_move(self, board: HexBoard) -> Optional[Tuple[int, int]]:
+    def get_move(self, board: HexBoard) -> Union[Tuple[int, int], str, None]:
         """
         Request a move from the player given the current board state.
 
@@ -59,12 +59,15 @@ class Player(ABC):
             board: Current board state
 
         Returns:
-            Tuple of (row, col) for the move, or None if player forfeits/fails
+            Tuple of (row, col) for a normal move,
+            "swap" string for a swap move (pie rule),
+            or None if player forfeits/fails
 
         Note:
             - Game controller will validate the move
             - Game controller handles retries for invalid moves
             - Returning None indicates forfeit (crash, timeout, etc.)
+            - Swap move is only valid when there's exactly one move on the board
         """
         pass
 

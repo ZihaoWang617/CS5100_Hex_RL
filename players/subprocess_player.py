@@ -7,7 +7,7 @@ Communicates via stdin/stdout using the protocol.
 
 import subprocess
 import threading
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 from engine.board import HexBoard
 from engine.protocol import Protocol, ProtocolError
 from engine.constants import Color
@@ -108,7 +108,7 @@ class SubprocessPlayer(Player):
             print(f"Failed to start subprocess: {e}")
             return False
 
-    def get_move(self, board: HexBoard) -> Optional[Tuple[int, int]]:
+    def get_move(self, board: HexBoard) -> Union[Tuple[int, int], str, None]:
         """
         Get move from subprocess.
 
@@ -116,7 +116,7 @@ class SubprocessPlayer(Player):
             board: Current board state
 
         Returns:
-            (row, col) tuple or None if subprocess fails/forfeits
+            (row, col) tuple for normal move, "swap" for swap move, or None if subprocess fails/forfeits
         """
         # Check if process is alive
         if self._is_dead():
@@ -161,8 +161,9 @@ class SubprocessPlayer(Player):
 
             # Parse move
             try:
-                row, col = Protocol.decode_move(response)
-                return (row, col)
+                move = Protocol.decode_move(response)
+                # Can be (row, col) tuple or "swap" string
+                return move
             except ProtocolError as e:
                 # Invalid format
                 print(f"Protocol error from {self.name}: {e}")

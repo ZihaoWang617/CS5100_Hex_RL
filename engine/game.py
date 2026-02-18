@@ -143,34 +143,63 @@ class GameController:
             self._handle_forfeit(player)
             return False
 
-        row, col = move
+        # Check if it's a swap move
+        if move == "swap":
+            result = self.board.swap_move()
 
-        # Make the move (already validated in _get_valid_move)
-        result = self.board.make_move(row, col, player.color)
+            if result != MoveResult.SUCCESS:
+                # Swap not allowed
+                self.log_event(LogLevel.ERROR,
+                               f"Swap move not allowed: {result.value}",
+                               player=player.name)
+                self._record_error(player)
+                self._handle_forfeit(player)
+                return False
 
-        if result != MoveResult.SUCCESS:
-            # This shouldn't happen, but handle it
-            self.log_event(LogLevel.ERROR,
-                           f"Unexpected move validation failure: {result.value}",
+            # Log successful swap
+            self.log_event(LogLevel.INFO,
+                           f"{player.name} executed swap move",
                            player=player.name,
-                           move=move)
-            self._handle_forfeit(player)
-            return False
+                           move="swap",
+                           turn=self.current_turn)
 
-        # Log successful move
-        self.log_event(LogLevel.INFO,
-                       f"{player.name} played {move}",
-                       player=player.name,
-                       move=move,
-                       turn=self.current_turn)
+            self.move_history.append({
+                'turn': self.current_turn,
+                'player': player.name,
+                'color': player.color.name,
+                'move': 'swap',
+                'timestamp': time.time()
+            })
+        else:
+            # Normal move
+            row, col = move
 
-        self.move_history.append({
-            'turn': self.current_turn,
-            'player': player.name,
-            'color': player.color.name,
-            'move': move,
-            'timestamp': time.time()
-        })
+            # Make the move (already validated in _get_valid_move)
+            result = self.board.make_move(row, col, player.color)
+
+            if result != MoveResult.SUCCESS:
+                # This shouldn't happen, but handle it
+                self.log_event(LogLevel.ERROR,
+                               f"Unexpected move validation failure: {result.value}",
+                               player=player.name,
+                               move=move)
+                self._handle_forfeit(player)
+                return False
+
+            # Log successful move
+            self.log_event(LogLevel.INFO,
+                           f"{player.name} played {move}",
+                           player=player.name,
+                           move=move,
+                           turn=self.current_turn)
+
+            self.move_history.append({
+                'turn': self.current_turn,
+                'player': player.name,
+                'color': player.color.name,
+                'move': move,
+                'timestamp': time.time()
+            })
 
         # Check for win
         if self.board.check_win(player.color):
@@ -187,7 +216,7 @@ class GameController:
 
         return True
 
-    def _get_valid_move(self, player) -> Optional[tuple]:
+    def _get_valid_move(self, player):
         """
         Get a valid move from player with retry logic.
 
@@ -195,7 +224,7 @@ class GameController:
             player: The player to get move from
 
         Returns:
-            Valid (row, col) tuple or None if player forfeits
+            Valid (row, col) tuple, "swap" string, or None if player forfeits
         """
         for attempt in range(1, self.MAX_INVALID_MOVES + 1):
             # Get move from player
@@ -215,16 +244,24 @@ class GameController:
                                player=player.name)
                 return None
 
-            # Validate move
-            row, col = move
-            validation_result = self._validate_move(row, col)
+            # Check if it's a swap move
+            if move == "swap":
+                # Validate swap is allowed (exactly one move on board)
+                if len(self.board.move_history) == 1:
+                    return "swap"
+                else:
+                    validation_result = MoveResult.SWAP_NOT_ALLOWED
+            else:
+                # Validate normal move
+                row, col = move
+                validation_result = self._validate_move(row, col)
 
-            if validation_result == MoveResult.SUCCESS:
-                # Valid move!
-                if attempt > 1:
-                    self.log_event(LogLevel.INFO,
-                                   f"{player.name} provided valid move after {attempt} attempts")
-                return move
+                if validation_result == MoveResult.SUCCESS:
+                    # Valid move!
+                    if attempt > 1:
+                        self.log_event(LogLevel.INFO,
+                                       f"{player.name} provided valid move after {attempt} attempts")
+                    return move
 
             # Invalid move - log and potentially retry
             self._record_error(player)
@@ -300,25 +337,6 @@ class GameController:
     def _get_opponent(self, player):
         """Get the opponent of a player."""
         return self.blue_player if player == self.red_player else self.red_player
-
-    def run_game(self) -> GameStatus:
-        """
-        Run the complete game loop.
-
-        Returns:
-            Final game status
-        """
-        if self.status != GameStatus.ONGOING:
-            return self.status
-
-        while self.play_turn():
-            pass  # Continue until game ends
-
-        # Cleanup players
-        self.red_player.cleanup()
-        self.blue_player.cleanup()
-
-        return self.status
 
     def get_game_summary(self) -> Dict[str, Any]:
         """Get summary of the game."""
