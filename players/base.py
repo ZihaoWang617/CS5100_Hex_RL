@@ -80,3 +80,9 @@ class Player(ABC):
         Default implementation does nothing.
         """
         pass
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.color.name})"
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} name={self.name} color={self.color.name}>"

@@ -12,6 +12,8 @@ from typing import Optional
 from engine.board import HexBoard
 from engine.game import GameController, GameEvent, LogLevel
 from engine.constants import Color
+from players.subprocess_player import SubprocessPlayer
+from players.gui_player import GUIPlayer
 
 
 COLOR_MAP = {
@@ -240,7 +242,6 @@ class TkinterView:
         self.stats_text = None
         self.log_text = None
         self.swap_button = None
-        self.forfeit_button = None
 
         # Click callback for GUI players
         self.click_callback = None
@@ -363,13 +364,6 @@ class TkinterView:
         )
         self.swap_button.pack(fill=tk.X, pady=2)
 
-        self.forfeit_button = ttk.Button(
-            controls_frame,
-            text="Forfeit",
-            command=self.on_forfeit_button
-        )
-        self.forfeit_button.pack(fill=tk.X, pady=2)
-
         # Event log
         log_frame = ttk.LabelFrame(info_frame, text="Event Log", padding="5")
         log_frame.grid(row=3, column=0, sticky=(
@@ -423,6 +417,18 @@ class TkinterView:
 
     def handle_cell_click(self, row, col):
         """Handle click on a board cell."""
+        # Check if game is over
+        if self.controller.winner is not None:
+            messagebox.showinfo(
+                "Game Over", "The game is already over. Please start a new game.")
+            return
+
+        # Check if it's a subprocess player's turn
+        if self.controller.current_player and isinstance(self.controller.current_player, SubprocessPlayer):
+            messagebox.showinfo(
+                "Not Your Turn", "Please wait for the subprocess player to make a move.")
+            return
+
         # Check if cell is empty
         if not self.controller.board.is_empty(row, col):
             messagebox.showwarning(
@@ -554,17 +560,20 @@ class TkinterView:
 
     def on_swap_button(self):
         """Handle swap button click."""
+        # Check if game is over
+        if self.controller.winner is not None:
+            messagebox.showinfo(
+                "Game Over", "The game is already over. Please start a new game.")
+            return
+
+        # Check if it's a subprocess player's turn
+        if self.controller.current_player and isinstance(self.controller.current_player, SubprocessPlayer):
+            messagebox.showinfo(
+                "Not Your Turn", "Please wait for the subprocess player to make a move.")
+            return
+
         if self.click_callback:
             self.click_callback("swap")
-
-    def on_forfeit_button(self):
-        """Handle forfeit button click."""
-        result = messagebox.askyesno(
-            "Forfeit Game",
-            "Are you sure you want to forfeit?"
-        )
-        if result and self.click_callback:
-            self.click_callback(None)  # None indicates forfeit
 
     def run(self):
         """Run the tkinter event loop."""

@@ -85,3 +85,6 @@ class GUIPlayer(Player):
     def is_waiting(self) -> bool:
         """Check if player is currently waiting for input."""
         return self.waiting_for_move
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.color.name}) [GUI]"
