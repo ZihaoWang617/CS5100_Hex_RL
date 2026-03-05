@@ -497,7 +497,7 @@ python3 gui_main.py --blue-subprocess "java -cp ./examples/java RandomAgent"
 |--------|-------------|---------|
 | `--board-size N` | Set board size (3-26) | 11 |
 | `--timeout SECONDS` | Time limit per move (overrides auto-selection) | Auto (based on board size) |
-| `--memory-limit MB` | Memory limit in MB | 128 |
+| `--memory-limit MB` | Memory limit in MB | 64 |
 | `--red-subprocess "CMD"` | Command to run RED agent | Human (GUI) |
 | `--blue-subprocess "CMD"` | Command to run BLUE agent | Human (GUI) |
 | `--red-name "NAME"` | Display name for RED | "Red Player" |
