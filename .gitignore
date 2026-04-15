@@ -1,5 +1,8 @@
 student_submissions/
 __pycache__/
 *.pyc
+*.pyo
+.DS_Store
+.pytest_cache/
 artifacts/
 .venv/
