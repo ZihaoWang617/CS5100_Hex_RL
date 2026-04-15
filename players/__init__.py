@@ -1,17 +1,15 @@
 """
 Players module for Hex game framework.
 
-Provides base classes and concrete implementations for different player types.
+Provides the core player implementations used by this project.
 """
 
 from .base import Player
-from .terminal_player import TerminalPlayer
-from .subprocess_player import SubprocessPlayer
-from .gui_player import GUIPlayer
+from .random_player import RandomPlayer
+from .q_learning_player import ApproximateQLearningPlayer
 
 __all__ = [
     'Player',
-    'TerminalPlayer',
-    'SubprocessPlayer',
-    'GUIPlayer',
+    'RandomPlayer',
+    'ApproximateQLearningPlayer',
 ]

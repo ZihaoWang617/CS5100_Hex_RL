@@ -1,1 +1,5 @@
 student_submissions/
+__pycache__/
+*.pyc
+artifacts/
+.venv/

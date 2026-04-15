@@ -28,13 +28,13 @@ We leverage a robust Hex game framework (originally built for CS 5800) as our fo
 
 ## 3. Project Structure
 ```text
-5100_final_proj/
-├── engine/                  # Core game logic (Hex adjacency, Board rules)
-├── players/                 # Player implementations
-│   ├── minimax_agent/       # Ying's Minimax implementation (Java)
-│   ├── q_learning_agent/    # Zihao's RL implementation (Python)
-│   └── base.py             # Abstract player class
-├── examples/                # Baseline agents (Random, etc.)
-├── training_loop.py        # RL self-play training environment
-├── gui_main.py             # GUI mode launcher
-└── terminal_main.py        # Terminal mode launcher
+CS5100_Hex_RL/
+|- engine/                  # Core game logic (Hex adjacency, Board rules)
+|- players/                 # Python players used for experiments
+|  |- base.py               # Abstract player class
+|  |- random_player.py      # Random baseline
+|  `- q_learning_player.py  # Approximate Q-learning agent
+|- evaluation/              # Batch match/evaluation scripts
+|- tests/                   # Unit tests for engine and players
+`- training_loop.py         # RL self-play training environment
+```
